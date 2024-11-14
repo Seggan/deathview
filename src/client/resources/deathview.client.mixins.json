@@ -4,9 +4,11 @@
   "package": "io.github.seggan.deathview.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "CameraAccessor",
     "ClientPlayerMixin",
-    "ServerPlayerMixin"
+    "DeathScreenAccessor",
+    "GameRendererMixin",
+    "ServerPlayerMixin",
+    "TextRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1
