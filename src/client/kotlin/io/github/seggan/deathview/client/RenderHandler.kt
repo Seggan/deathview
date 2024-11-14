@@ -8,9 +8,10 @@ import net.minecraft.client.gui.screen.DeathScreen
 
 private var opacity = 0.0
 
-fun modifyAlpha(rgba: Int): Int {
+fun modifyAlpha(argb: Int): Int {
+    if (!recentDeath) return argb
     val currentScreen = MinecraftClient.getInstance().currentScreen
-    if (currentScreen !is DeathScreen) return rgba
+    if (currentScreen !is DeathScreen) return argb
     val accessor = currentScreen as DeathScreenAccessor
     opacity = if (accessor.ticksSinceDeath <= 20) {
         0.0
@@ -19,7 +20,7 @@ fun modifyAlpha(rgba: Int): Int {
     }
     val opacity = (opacity.coerceIn(0.0, 1.0) * 255).toInt()
     if (opacity == 0) return 0
-    return rgba and 0x00FFFFFF or (opacity shl 24)
+    return argb and 0x00FFFFFF or (opacity shl 24)
 }
 
 private fun IntRange.percentage(value: Int): Double {
