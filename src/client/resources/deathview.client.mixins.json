@@ -6,6 +6,7 @@
   "client": [
     "ClientPlayerMixin",
     "DeathScreenAccessor",
+    "DeathScreenMixin",
     "DrawContextMixin",
     "GameRendererMixin",
     "ServerPlayerMixin",
