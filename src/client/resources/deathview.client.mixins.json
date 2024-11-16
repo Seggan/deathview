@@ -4,14 +4,14 @@
   "package": "io.github.seggan.deathview.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "ClickableWidgetAccessor",
-    "ClickableWidgetMixin",
-    "ClientPlayerMixin",
+    "AbstractWidgetAccessor",
+    "AbstractWidgetMixin",
+    "LocalPlayerMixin",
     "DeathScreenAccessor",
     "DeathScreenMixin",
     "GameRendererMixin",
     "ServerPlayerMixin",
-    "TextRendererMixin"
+    "FontMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -2,48 +2,48 @@
 
 package io.github.seggan.deathview.client
 
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.option.Perspective
-import net.minecraft.util.hit.HitResult
-import net.minecraft.world.RaycastContext
+import net.minecraft.client.CameraType
+import net.minecraft.client.Minecraft
+import net.minecraft.world.level.ClipContext
+import net.minecraft.world.phys.HitResult
 
 var recentDeath = false
-private var lastPerspective = Perspective.FIRST_PERSON
+private var lastCameraType = CameraType.FIRST_PERSON
 var originalChatOpacity = 0.0
 
 fun onDeath() {
     recentDeath = true
-    val client = MinecraftClient.getInstance()
+    val client = Minecraft.getInstance()
     val options = client.options
-    originalChatOpacity = options.textBackgroundOpacity.value
+    originalChatOpacity = options.textBackgroundOpacity().get()
 
-    lastPerspective = options.perspective
+    lastCameraType = options.cameraType
     val player = client.player
     if (player == null) {
-        options.perspective = Perspective.THIRD_PERSON_BACK
+        options.cameraType = CameraType.THIRD_PERSON_BACK
     } else {
-        val headPos = player.getCameraPosVec(1f)
-        val cameraDir = player.getRotationVec(1f)
-        val twoBlocksBack = headPos.subtract(cameraDir.multiply(2.0))
-        val raycastContext = RaycastContext(
+        val headPos = player.getEyePosition(1f)
+        val cameraDir = player.getViewVector(1f)
+        val twoBlocksBack = headPos.subtract(cameraDir.scale(2.5))
+        val clipContext = ClipContext(
             headPos,
             twoBlocksBack,
-            RaycastContext.ShapeType.OUTLINE,
-            RaycastContext.FluidHandling.NONE,
+            ClipContext.Block.VISUAL,
+            ClipContext.Fluid.NONE,
             player
         )
-        val hit = player.world.raycast(raycastContext)
-        if (hit != null && hit.type == HitResult.Type.MISS) {
-            options.perspective = Perspective.THIRD_PERSON_BACK
+        val hit = player.level().clip(clipContext)
+        if (hit.type == HitResult.Type.MISS) {
+            options.cameraType = CameraType.THIRD_PERSON_BACK
         } else {
-            options.perspective = Perspective.THIRD_PERSON_FRONT
+            options.cameraType = CameraType.THIRD_PERSON_FRONT
         }
     }
 }
 
 fun onRespawn() {
-    val options = MinecraftClient.getInstance().options
-    options.perspective = lastPerspective
-    options.textBackgroundOpacity.value = originalChatOpacity
+    val options = Minecraft.getInstance().options
+    options.cameraType = lastCameraType
+    options.textBackgroundOpacity().set(originalChatOpacity)
     recentDeath = false
 }

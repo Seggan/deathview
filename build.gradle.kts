@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.0.21"
     id("fabric-loom")
     id("maven-publish")
+    id("com.modrinth.minotaur") version "2.+"
 }
 
 class ModData {
@@ -27,7 +28,7 @@ base {
     archivesName.set(mod.id)
 }
 
-val targetJavaVersion = 21
+val targetJavaVersion = if (stonecutter.eval(mcVersion, ">=1.20.6")) 21 else 17
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
@@ -49,11 +50,7 @@ loom {
 }
 
 repositories {
-    // Add repositories to retrieve artifacts from in here.
-    // You should only use this when depending on other mods because
-    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-    // for more information about repositories.
+    maven("https://maven.parchmentmc.org")
 }
 
 dependencies {
@@ -62,7 +59,11 @@ dependencies {
     }
 
     minecraft("com.mojang:minecraft:$mcVersion")
-    mappings("net.fabricmc:yarn:$mcVersion+build.${deps["yarn_build"]}:v2")
+    @Suppress("UnstableApiUsage")
+    mappings(loom.layered {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-${deps["parchment"]}@zip")
+    })
     modImplementation("net.fabricmc:fabric-loader:${deps["fabric_loader"]}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${deps["koltin_fabric_loader"]}")
 }
@@ -113,20 +114,19 @@ tasks.register<Copy>("buildAndCollect") {
     dependsOn("build")
 }
 
-// configure the maven publication
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            artifactId = project.property("mod.name") as String
-            from(components["java"])
-        }
-    }
+modrinth {
+    syncBodyFrom = rootProject.file("README.md").readText()
 
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
+    token = System.getenv("MODRINTH_TOKEN")
+    projectId = mod.id
+    versionNumber = mod.version
+    uploadFile.set(tasks.remapJar)
+    dependencies {
+        required.project("fabric-loader")
+        required.project("fabric-language-kotlin")
     }
+}
+
+tasks.modrinth {
+    dependsOn(tasks.modrinthSyncBody)
 }

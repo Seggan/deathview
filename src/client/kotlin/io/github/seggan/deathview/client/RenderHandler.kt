@@ -2,30 +2,30 @@
 
 package io.github.seggan.deathview.client
 
-import io.github.seggan.deathview.client.mixin.ClickableWidgetAccessor
+import io.github.seggan.deathview.client.mixin.AbstractWidgetAccessor
 import io.github.seggan.deathview.client.mixin.DeathScreenAccessor
-import net.minecraft.client.MinecraftClient
-import net.minecraft.client.gui.screen.DeathScreen
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.DeathScreen
 
 private var opacity = 0f
 
 private var oldAlpha = 0f
 
-fun ClickableWidgetAccessor.startRender() {
+fun AbstractWidgetAccessor.startRender() {
     if (!isOnDeathScreen) return
     oldAlpha = this.alpha
     this.alpha = opacity
 }
 
-fun ClickableWidgetAccessor.endRender() {
+fun AbstractWidgetAccessor.endRender() {
     if (!isOnDeathScreen) return
     this.alpha = oldAlpha
 }
 
 fun tickChat() {
     if (!recentDeath) return
-    val client = MinecraftClient.getInstance()
-    val currentScreen = client.currentScreen
+    val client = Minecraft.getInstance()
+    val currentScreen = client.screen
     if (currentScreen !is DeathScreen) return
     val accessor = currentScreen as DeathScreenAccessor
     opacity = if (accessor.ticksSinceDeath <= 30) {
@@ -33,7 +33,7 @@ fun tickChat() {
     } else {
         (30..70).percentage(accessor.ticksSinceDeath).coerceIn(0.0, 1.0).toFloat()
     }
-    client.options.textBackgroundOpacity.value = originalChatOpacity * opacity
+    client.options.textBackgroundOpacity().set(originalChatOpacity * opacity)
 }
 
 fun modifyAlpha(argb: Int): Int {
@@ -48,4 +48,4 @@ private fun IntRange.percentage(value: Int): Double {
 }
 
 private val isOnDeathScreen: Boolean
-    get() = recentDeath && MinecraftClient.getInstance().currentScreen is DeathScreen
+    get() = recentDeath && Minecraft.getInstance().screen is DeathScreen

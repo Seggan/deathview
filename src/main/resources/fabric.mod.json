@@ -12,9 +12,6 @@
   "entrypoints": {
     "client": [
       "io.github.seggan.deathview.client.DeathViewClient"
-    ],
-    "main": [
-      "io.github.seggan.deathview.DeathView"
     ]
   },
   "mixins": [
@@ -27,7 +24,6 @@
   "depends": {
     "fabricloader": ">=${loader}",
     "fabric-language-kotlin": ">=${kotlin_loader}",
-    "fabric": "*",
     "minecraft": "${mcdep}"
   }
 }
