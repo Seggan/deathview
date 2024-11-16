@@ -115,9 +115,7 @@ tasks.register<Copy>("buildAndCollect") {
 }
 
 modrinth {
-    syncBodyFrom = rootProject.file("README.md").readText()
-
-    token = System.getenv("MODRINTH_TOKEN")
+    token = property("modrinth.token").toString()
     projectId = mod.id
     versionNumber = mod.version
     uploadFile.set(tasks.remapJar)
@@ -125,6 +123,8 @@ modrinth {
         required.project("fabric-loader")
         required.project("fabric-language-kotlin")
     }
+
+    syncBodyFrom = rootProject.file("README.md").readText()
 }
 
 tasks.modrinth {

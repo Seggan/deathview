@@ -9,6 +9,11 @@ stonecutter registerChiseled tasks.register("chiseledBuild", stonecutter.chisele
     ofTask("buildAndCollect")
 }
 
+stonecutter registerChiseled tasks.register("chiseledModrinth", stonecutter.chiseled) {
+    group = "project"
+    ofTask("modrinth")
+}
+
 stonecutter configureEach {
     swap("mod_version", "\"${property("mod.version")}\";")
     const("release", property("mod.id") != "template")
