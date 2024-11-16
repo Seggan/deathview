@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "deathview",
+  "id": "${id}",
   "version": "${version}",
-  "name": "DeathView",
+  "name": "${name}",
   "description": "",
-  "authors": [],
+  "authors": ["Seggan"],
   "contact": {},
   "license": "GPL-3.0",
   "icon": "assets/deathview/icon.png",
@@ -25,9 +25,9 @@
     }
   ],
   "depends": {
-    "fabricloader": ">=${loader_version}",
-    "fabric-language-kotlin": ">=${kotlin_loader_version}",
+    "fabricloader": ">=${loader}",
+    "fabric-language-kotlin": ">=${kotlin_loader}",
     "fabric": "*",
-    "minecraft": "${minecraft_version}"
+    "minecraft": "${mcdep}"
   }
 }

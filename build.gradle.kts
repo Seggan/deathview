@@ -1,14 +1,30 @@
 plugins {
     kotlin("jvm") version "2.0.21"
-    id("fabric-loom") version "1.8.11"
+    id("fabric-loom")
     id("maven-publish")
 }
 
-version = project.property("mod_version") as String
-group = project.property("maven_group") as String
+class ModData {
+    val id = property("mod.id").toString()
+    val name = property("mod.name").toString()
+    val version = property("mod.version").toString()
+    val group = property("mod.group").toString()
+}
+
+class ModDependencies {
+    operator fun get(name: String) = property("deps.$name").toString()
+}
+
+val mod = ModData()
+val deps = ModDependencies()
+val mcVersion = stonecutter.current.version
+val mcDep = property("mod.mc_dep").toString()
+
+version = "${mod.version}+${mcVersion}"
+group = mod.group
 
 base {
-    archivesName.set(project.property("archives_base_name") as String)
+    archivesName.set(mod.id)
 }
 
 val targetJavaVersion = 21
@@ -41,29 +57,34 @@ repositories {
 }
 
 dependencies {
-    // To change the versions see the gradle.properties file
-    minecraft("com.mojang:minecraft:${project.property("minecraft_version")}")
-    mappings("net.fabricmc:yarn:${project.property("yarn_mappings")}:v2")
-    modImplementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
-    modImplementation("net.fabricmc:fabric-language-kotlin:${project.property("kotlin_loader_version")}")
+    fun fapi(vararg modules: String) = modules.forEach {
+        modImplementation(fabricApi.module(it, deps["fabric_api"]))
+    }
 
-    modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+    minecraft("com.mojang:minecraft:$mcVersion")
+    mappings("net.fabricmc:yarn:$mcVersion+build.${deps["yarn_build"]}:v2")
+    modImplementation("net.fabricmc:fabric-loader:${deps["fabric_loader"]}")
+    modImplementation("net.fabricmc:fabric-language-kotlin:${deps["koltin_fabric_loader"]}")
 }
 
 tasks.processResources {
-    inputs.property("version", project.version)
-    inputs.property("minecraft_version", project.property("minecraft_version"))
-    inputs.property("loader_version", project.property("loader_version"))
-    filteringCharset = "UTF-8"
+    inputs.property("id", mod.id)
+    inputs.property("name", mod.name)
+    inputs.property("version", mod.version)
+    inputs.property("mcdep", mcDep)
+    inputs.property("loader", deps["fabric_loader"])
+    inputs.property("kotlin_loader", deps["koltin_fabric_loader"])
 
-    filesMatching("fabric.mod.json") {
-        expand(
-            "version" to project.version,
-            "minecraft_version" to project.property("minecraft_version"),
-            "loader_version" to project.property("loader_version"),
-            "kotlin_loader_version" to project.property("kotlin_loader_version")
-        )
-    }
+    val map = mapOf(
+        "id" to mod.id,
+        "name" to mod.name,
+        "version" to mod.version,
+        "mcdep" to mcDep,
+        "loader" to deps["fabric_loader"],
+        "kotlin_loader" to deps["koltin_fabric_loader"]
+    )
+
+    filesMatching("fabric.mod.json") { expand(map) }
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -85,11 +106,18 @@ tasks.jar {
     }
 }
 
+tasks.register<Copy>("buildAndCollect") {
+    group = "build"
+    from(tasks.remapJar.get().archiveFile)
+    into(rootProject.layout.buildDirectory.file("libs/${mod.version}"))
+    dependsOn("build")
+}
+
 // configure the maven publication
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
-            artifactId = project.property("archives_base_name") as String
+            artifactId = project.property("mod.name") as String
             from(components["java"])
         }
     }

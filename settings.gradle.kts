@@ -6,3 +6,18 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
+plugins {
+    id("dev.kikugie.stonecutter") version "0.4.4"
+}
+
+stonecutter {
+    kotlinController = true
+    centralScript = "build.gradle.kts"
+
+    shared {
+        versions("1.20.6", "1.21.1", "1.21.3")
+    }
+
+    create(rootProject)
+}
