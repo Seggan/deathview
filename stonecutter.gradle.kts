@@ -17,5 +17,4 @@ stonecutter registerChiseled tasks.register("chiseledModrinth", stonecutter.chis
 stonecutter configureEach {
     swap("mod_version", "\"${property("mod.version")}\";")
     const("release", property("mod.id") != "template")
-    dependency("fapi", project.property("deps.fabric_api").toString())
 }

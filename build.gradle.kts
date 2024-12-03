@@ -54,10 +54,6 @@ repositories {
 }
 
 dependencies {
-    fun fapi(vararg modules: String) = modules.forEach {
-        modImplementation(fabricApi.module(it, deps["fabric_api"]))
-    }
-
     minecraft("com.mojang:minecraft:$mcVersion")
     @Suppress("UnstableApiUsage")
     mappings(loom.layered {
