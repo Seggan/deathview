@@ -7,7 +7,7 @@
   "authors": ["Seggan"],
   "contact": {},
   "license": "GPL-3.0",
-  "icon": "assets/deathview/icon.png",
+  "icon": "assets/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
@@ -15,7 +15,6 @@
     ]
   },
   "mixins": [
-    "deathview.mixins.json",
     {
       "config": "deathview.client.mixins.json",
       "environment": "client"

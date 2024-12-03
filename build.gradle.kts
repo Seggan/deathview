@@ -117,10 +117,9 @@ tasks.register<Copy>("buildAndCollect") {
 modrinth {
     token = property("modrinth.token").toString()
     projectId = mod.id
-    versionNumber = mod.version
+    versionNumber = project.version.toString()
     uploadFile.set(tasks.remapJar)
     dependencies {
-        required.project("fabric-loader")
         required.project("fabric-language-kotlin")
     }
 
