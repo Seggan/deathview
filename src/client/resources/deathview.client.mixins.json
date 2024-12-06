@@ -10,7 +10,6 @@
     "DeathScreenAccessor",
     "DeathScreenMixin",
     "GameRendererMixin",
-    "ServerPlayerMixin",
     "FontMixin"
   ],
   "injectors": {
