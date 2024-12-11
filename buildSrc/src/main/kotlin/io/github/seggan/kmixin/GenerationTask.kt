@@ -25,7 +25,8 @@ open class GenerationTask : DefaultTask() {
                 if (!mixinFile.exists()) return@map it
                 val generator = JavaGenerator(mixinFile)
                 if (generator.isKotlinMixin) {
-                    return@map JsonPrimitive(generator.doStuff())
+                    generator.doStuff()
+                    return@map JsonPrimitive(generator.emittedName)
                 } else {
                     return@map it
                 }
