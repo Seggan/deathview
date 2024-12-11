@@ -3,6 +3,8 @@ plugins {
     id("fabric-loom")
     id("maven-publish")
     id("com.modrinth.minotaur") version "2.+"
+    id("io.github.seggan.kotlin-mixin-plugin")
+    id("com.dorongold.task-tree") version "4.0.0"
 }
 
 class ModData {

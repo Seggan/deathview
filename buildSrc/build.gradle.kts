@@ -4,6 +4,12 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven("https://jitpack.io")
+}
+
+dependencies {
+    implementation("org.ow2.asm:asm:9.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 }
 
 kotlin {

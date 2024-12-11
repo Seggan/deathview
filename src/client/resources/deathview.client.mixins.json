@@ -10,7 +10,8 @@
     "DeathScreenAccessor",
     "DeathScreenMixin",
     "GameRendererMixin",
-    "FontMixin"
+    "FontMixin",
+    "TestMixin"
   ],
   "injectors": {
     "defaultRequire": 1
