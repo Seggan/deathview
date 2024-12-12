@@ -1,6 +1,5 @@
 package io.github.seggan.kmixin
 
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
@@ -17,24 +16,16 @@ open class GenerationTask : DefaultTask() {
             val file = buildDir.resolve("resources/$subDir/${config.file}")
             val mixinJson = Json.parseToJsonElement(file.readText())
             val pkg = mixinJson.jsonObject["package"]?.jsonPrimitive?.content ?: continue
-            val mixinList = mixinJson.jsonObject[config.environment.toString()]?.jsonArray ?: continue
-            val mapped = mixinList.map {
-                val mixin = it.jsonPrimitive.content
+            val mixinList = mixinJson.jsonObject[config.environment.toString()]?.jsonArray?.map { it.jsonPrimitive.content } ?: continue
+            for (mixin in mixinList) {
                 val packagePath = pkg.replace('.', '/')
                 val mixinFile = buildDir.resolve("classes/kotlin/$subDir/$packagePath/$mixin.class")
-                if (!mixinFile.exists()) return@map it
-                val generator = JavaGenerator(mixinFile)
+                if (!mixinFile.exists()) continue
+                val generator = JavaGenerator(pkg, mixinFile)
                 if (generator.isKotlinMixin) {
                     generator.doStuff()
-                    return@map JsonPrimitive(generator.emittedName)
-                } else {
-                    return@map it
                 }
-            }.let(::JsonArray)
-            val newMixins = mixinJson.jsonObject.toMutableMap()
-            newMixins[config.environment.toString()] = mapped
-            val newJson = Json.encodeToString(JsonObject(newMixins))
-            file.writeText(newJson)
+            }
         }
     }
 

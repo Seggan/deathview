@@ -2,15 +2,14 @@ package io.github.seggan.kmixin
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.kotlin.dsl.get
 
 class KMixinPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        val jarTask = project.tasks["jar"] ?: return
         val allDependTasks = listOf(
-            "classes",
+            "compileKotlin",
             "compileClientKotlin",
             "compileServerKotlin",
+            "processResources",
             "processClientResources",
             "processServerResources"
         )
@@ -22,7 +21,10 @@ class KMixinPlugin : Plugin<Project> {
                     dependsOn(project.tasks.findByName(task) ?: continue)
                 }
             }
+
+            listOf("jar", "clientClasses", "serverClasses").mapNotNull(project.tasks::findByName).forEach {
+                it.dependsOn(thisTask)
+            }
         }
-        jarTask.dependsOn(thisTask)
     }
 }

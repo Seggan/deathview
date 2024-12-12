@@ -6,12 +6,15 @@ import org.spongepowered.asm.mixin.Mixin
 import org.spongepowered.asm.mixin.injection.Inject
 import java.io.File
 
-class JavaGenerator(private val file: File) {
+class JavaGenerator(private val pkg: String, private val file: File) {
 
     private val reader = ClassReader(file.readBytes())
+    private val slashPkg = pkg.replace('.', '/')
+
+    private val mixinName = "$slashPkg/${file.nameWithoutExtension}"
+    private val implName = "$slashPkg-impl/${file.nameWithoutExtension}"
 
     val isKotlinMixin: Boolean
-    val emittedName = file.nameWithoutExtension + "JavaMixinGen"
 
     init {
         val visitor = AnnotationFinder()
@@ -34,8 +37,19 @@ class JavaGenerator(private val file: File) {
         }
     }
 
-    private class AnnotationReplacer(delegate: ClassVisitor) : ClassVisitor(ASM9, delegate) {
+    private inner class AnnotationReplacer(delegate: ClassVisitor) : ClassVisitor(ASM9, delegate) {
         private val replace = listOf(Metadata::class, Mixin::class, Inject::class)
+
+        override fun visit(
+            version: Int,
+            access: Int,
+            name: String,
+            signature: String?,
+            superName: String,
+            interfaces: Array<out String>?
+        ) {
+            super.visit(version, access, implName, signature, superName, interfaces)
+        }
 
         override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
             if (replace.any { descriptor == it.java.descriptorString() }) {
@@ -46,8 +60,6 @@ class JavaGenerator(private val file: File) {
     }
 
     private inner class WrapperGenerator(delegate: ClassVisitor) : ClassVisitor(ASM9, delegate) {
-
-        lateinit var name: String
 
         override fun visit(
             version: Int,
@@ -60,9 +72,7 @@ class JavaGenerator(private val file: File) {
             if (Opcodes.ACC_RECORD and access != 0) {
                 throw IllegalStateException("Records are not supported")
             }
-            val split = name.split('/')
-            this.name = split.dropLast(1).joinToString("/") + "/$emittedName"
-            super.visit(version, access, this.name, signature, superName, interfaces)
+            super.visit(version, access, mixinName, signature, superName, interfaces)
         }
 
         override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
@@ -134,26 +144,30 @@ class JavaGenerator(private val file: File) {
                 throw IllegalStateException("Non-static methods are not supported")
             }
             return WrappedMethodGenerator(
-                super.visitMethod(access, name, descriptor, signature, exceptions),
-                this.name,
+                super.visitMethod(access and (Opcodes.ACC_STATIC.inv()), name, descriptor, signature, exceptions),
                 Type.getMethodType(descriptor),
                 name
             )
         }
     }
 
-    private class WrappedMethodGenerator(
+    private inner class WrappedMethodGenerator(
         private val delegate: MethodVisitor,
-        private val ownerName: String,
         private val type: Type,
         private val name: String
     ) : MethodVisitor(ASM9) {
         override fun visitCode() {
             delegate.visitCode()
             for ((i, arg) in type.argumentTypes.withIndex()) {
-                delegate.visitVarInsn(arg.getOpcode(Opcodes.ILOAD), i)
+                delegate.visitVarInsn(arg.getOpcode(Opcodes.ILOAD), i + 1)
             }
-            delegate.visitMethodInsn(Opcodes.INVOKESTATIC, ownerName, name, type.descriptor, false)
+            delegate.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                implName,
+                name,
+                type.descriptor,
+                false
+            )
             delegate.visitInsn(type.returnType.getOpcode(Opcodes.IRETURN))
             delegate.visitEnd()
         }
@@ -167,14 +181,16 @@ class JavaGenerator(private val file: File) {
         val writer = ClassWriter(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES)
         val visitor = WrapperGenerator(writer)
         reader.accept(visitor, 0)
-        file.resolveSibling("$emittedName.class").writeBytes(writer.toByteArray())
+        file.writeBytes(writer.toByteArray())
         removeOldAnnotations()
     }
 
     private fun removeOldAnnotations() {
+        val genDir = file.parentFile.resolveSibling("${pkg.substringAfterLast('.')}-impl")
+        genDir.mkdirs()
         val writer = ClassWriter(reader, 0)
         val visitor = AnnotationReplacer(writer)
         reader.accept(visitor, 0)
-        file.writeBytes(writer.toByteArray())
+        genDir.resolve(file.name).writeBytes(writer.toByteArray())
     }
 }
