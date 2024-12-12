@@ -2,8 +2,6 @@ package io.github.seggan.kmixin.gen
 
 import org.objectweb.asm.*
 import org.objectweb.asm.Opcodes.ASM9
-import org.spongepowered.asm.mixin.Mixin
-import org.spongepowered.asm.mixin.injection.Inject
 import java.io.File
 import kotlin.metadata.jvm.KotlinClassMetadata
 
@@ -61,7 +59,7 @@ class JavaGenerator(private val pkg: String, private val file: File) {
     }
 
     private inner class AnnotationReplacer(delegate: ClassVisitor) : ClassVisitor(ASM9, delegate) {
-        private val replace = listOf(Metadata::class, Mixin::class, Inject::class).map { it.java.descriptorString() }
+        private val replace = listOf(Descriptors.KOTLIN_METADATA, Descriptors.SPONGE_MIXIN, Descriptors.SPONGE_INJECT)
 
         override fun visit(
             version: Int,
@@ -79,6 +77,24 @@ class JavaGenerator(private val pkg: String, private val file: File) {
                 return null
             }
             return super.visitAnnotation(descriptor, visible)
+        }
+
+        override fun visitMethod(
+            access: Int,
+            name: String?,
+            descriptor: String?,
+            signature: String?,
+            exceptions: Array<out String>?
+        ): MethodVisitor {
+            val superVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
+            return object : MethodVisitor(ASM9, superVisitor) {
+                override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
+                    if (replace.any { descriptor == it }) {
+                        return null
+                    }
+                    return super.visitAnnotation(descriptor, visible)
+                }
+            }
         }
     }
 
