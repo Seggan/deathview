@@ -8,7 +8,7 @@ import net.minecraft.world.level.ClipContext
 import net.minecraft.world.phys.HitResult
 
 var recentDeath = false
-private var lastCameraType = CameraType.FIRST_PERSON
+var lastCameraType = CameraType.FIRST_PERSON
 var originalChatOpacity = 0.0
 
 fun onDeath() {
@@ -41,9 +41,3 @@ fun onDeath() {
     }
 }
 
-fun onRespawn() {
-    val options = Minecraft.getInstance().options
-    options.cameraType = lastCameraType
-    options.textBackgroundOpacity().set(originalChatOpacity)
-    recentDeath = false
-}

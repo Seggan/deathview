@@ -1,5 +1,6 @@
 package io.github.seggan.kmixin
 
+import io.github.seggan.kmixin.gen.JavaGenerator
 import kotlinx.serialization.json.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
@@ -22,7 +23,7 @@ open class GenerationTask : DefaultTask() {
                 val mixinFile = buildDir.resolve("classes/kotlin/$subDir/$packagePath/$mixin.class")
                 if (!mixinFile.exists()) continue
                 val generator = JavaGenerator(pkg, mixinFile)
-                if (generator.isKotlinMixin) {
+                if (generator.metadata != null && generator.isMixin) {
                     generator.doStuff()
                 }
             }
