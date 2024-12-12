@@ -17,15 +17,20 @@ open class GenerationTask : DefaultTask() {
             val file = buildDir.resolve("resources/$subDir/${config.file}")
             val mixinJson = Json.parseToJsonElement(file.readText())
             val pkg = mixinJson.jsonObject["package"]?.jsonPrimitive?.content ?: continue
-            val mixinList = mixinJson.jsonObject[config.environment.toString()]?.jsonArray?.map { it.jsonPrimitive.content } ?: continue
+            val mixinList =
+                mixinJson.jsonObject[config.environment.toString()]?.jsonArray?.map { it.jsonPrimitive.content }
+                    ?: continue
             for (mixin in mixinList) {
                 val packagePath = pkg.replace('.', '/')
                 val mixinFile = buildDir.resolve("classes/kotlin/$subDir/$packagePath/$mixin.class")
                 if (!mixinFile.exists()) continue
-                val generator = JavaGenerator(pkg, mixinFile)
-                if (generator.metadata != null && generator.isMixin) {
-                    generator.doStuff()
+                val generator = try {
+                    JavaGenerator(pkg, mixinFile)
+                } catch (e: IllegalStateException) {
+                    logger.error("Failed to generate implementation for $mixin", e)
+                    continue
                 }
+                generator.doStuff()
             }
         }
     }

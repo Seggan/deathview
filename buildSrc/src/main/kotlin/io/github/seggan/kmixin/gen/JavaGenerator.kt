@@ -3,7 +3,9 @@ package io.github.seggan.kmixin.gen
 import org.objectweb.asm.*
 import org.objectweb.asm.Opcodes.ASM9
 import java.io.File
+import kotlin.metadata.ClassKind
 import kotlin.metadata.jvm.KotlinClassMetadata
+import kotlin.metadata.kind
 
 class JavaGenerator(private val pkg: String, private val file: File) {
 
@@ -14,17 +16,16 @@ class JavaGenerator(private val pkg: String, private val file: File) {
     val implName = "$slashPkg-impl/${file.nameWithoutExtension}"
 
     val annotations: Map<String, List<String>>
-
-    val metadata: KotlinClassMetadata?
-    val isMixin: Boolean
+    val metadata: KotlinClassMetadata
 
     init {
         val visitor = AnnotationFinder()
         reader.accept(visitor, 0)
-        isMixin = visitor.foundMixin
-        metadata = visitor.metadata
+        metadata = visitor.metadata ?: error("No Kotlin metadata found in $file")
         annotations = visitor.annotations
     }
+
+    private val isInterface = metadata is KotlinClassMetadata.Class && metadata.kmClass.kind == ClassKind.INTERFACE
 
     private class AnnotationFinder : ClassVisitor(ASM9) {
 
@@ -36,8 +37,6 @@ class JavaGenerator(private val pkg: String, private val file: File) {
         override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
             if (descriptor == Descriptors.KOTLIN_METADATA) {
                 return MetadataReader(::metadata)
-            } else if (descriptor == Descriptors.SPONGE_MIXIN) {
-                foundMixin = true
             }
             return null
         }
@@ -59,7 +58,7 @@ class JavaGenerator(private val pkg: String, private val file: File) {
     }
 
     private inner class AnnotationReplacer(delegate: ClassVisitor) : ClassVisitor(ASM9, delegate) {
-        private val replace = listOf(Descriptors.KOTLIN_METADATA, Descriptors.SPONGE_MIXIN, Descriptors.SPONGE_INJECT)
+        private val replace = if (isInterface) listOf(Descriptors.KOTLIN_METADATA) else listOf(Descriptors.SPONGE_MIXIN, Descriptors.SPONGE_INJECT)
 
         override fun visit(
             version: Int,
@@ -69,7 +68,7 @@ class JavaGenerator(private val pkg: String, private val file: File) {
             superName: String,
             interfaces: Array<out String>?
         ) {
-            super.visit(version, access, implName, signature, superName, interfaces)
+            super.visit(version, access, if (isInterface) mixinName else implName, signature, superName, interfaces)
         }
 
         override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
@@ -99,15 +98,17 @@ class JavaGenerator(private val pkg: String, private val file: File) {
     }
 
     fun doStuff() {
-        val writer = ClassWriter(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES)
-        val visitor = WrapperGenerator(writer, this)
-        reader.accept(visitor, 0)
-        file.writeBytes(writer.toByteArray())
+        if (!isInterface) {
+            val writer = ClassWriter(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES)
+            val visitor = WrapperGenerator(writer, this)
+            reader.accept(visitor, 0)
+            file.writeBytes(writer.toByteArray())
+        }
         removeOldAnnotations()
     }
 
     private fun removeOldAnnotations() {
-        val genDir = file.parentFile.resolveSibling("${pkg.substringAfterLast('.')}-impl")
+        val genDir = if (isInterface) file.parentFile else file.parentFile.resolveSibling("${pkg.substringAfterLast('.')}-impl")
         genDir.mkdirs()
         val writer = ClassWriter(reader, 0)
         val visitor = AnnotationReplacer(writer)
