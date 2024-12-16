@@ -3,6 +3,7 @@ package io.github.seggan.kmixin.gen
 import org.objectweb.asm.*
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo
 import kotlin.metadata.KmClassifier
+import kotlin.metadata.isInline
 import kotlin.metadata.jvm.KotlinClassMetadata
 import kotlin.metadata.jvm.Metadata
 import kotlin.metadata.jvm.signature
@@ -90,7 +91,7 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         exceptions: Array<out String>?
     ): MethodVisitor? {
         val annotations = generator.annotations[name + descriptor] ?: return null
-        if (Descriptors.SPONGE_INJECT !in annotations) return null
+        if (!annotations.any { it.startsWith("Lorg/spongepowered") }) return null
         if (Opcodes.ACC_STATIC and access == 0) {
             throw MixinGenerationException("Non-static methods are not supported")
         }
@@ -100,7 +101,7 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
 
         val type = Type.getMethodType(descriptor)
         val argumentTypes = type.argumentTypes.toMutableList()
-        if (!argumentTypes.any { it.descriptor == Descriptors.SPONGE_CALLBACK_INFO }) {
+        if (!argumentTypes.any { it.descriptor == Descriptors.SPONGE_CALLBACK_INFO } && annotations.any { it == Descriptors.SPONGE_INJECT }) {
             argumentTypes.add(Type.getType(CallbackInfo::class.java))
         }
 
@@ -119,6 +120,17 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
                 argumentTypes.removeAt(0)
             } else {
                 receiverType = null
+            }
+
+            if (func.isInline) {
+                // Not my fault if your function explodes
+                return super.visitMethod(
+                    access,
+                    name,
+                    type.descriptor,
+                    signature,
+                    exceptions
+                )
             }
         } else {
             receiverType = null
@@ -146,8 +158,6 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         private val castType: String?
     ) : MethodVisitor(Opcodes.ASM9) {
 
-        private val annotations = mutableSetOf<String>()
-
         override fun visitCode() {
             delegate.visitCode()
             var i = 0
@@ -157,7 +167,7 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
                 i++
             }
             while (i < type.argumentTypes.size) {
-                delegate.visitVarInsn(type.argumentTypes[i].getOpcode(Opcodes.ILOAD), i + 1)
+                delegate.visitVarInsn(type.argumentTypes[i].getOpcode(Opcodes.ILOAD), i)
                 i++
             }
             Metadata()
@@ -173,7 +183,6 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         }
 
         override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor {
-            annotations.add(descriptor)
             return delegate.visitAnnotation(descriptor, visible)
         }
     }

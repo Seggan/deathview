@@ -58,7 +58,11 @@ class JavaGenerator(private val pkg: String, private val file: File) {
     }
 
     private inner class ImplEditor(delegate: ClassVisitor) : ClassVisitor(ASM9, delegate) {
-        private val replace = if (isInterface) listOf(Descriptors.KOTLIN_METADATA) else listOf(Descriptors.SPONGE_MIXIN, Descriptors.SPONGE_INJECT)
+        private val replace: (String) -> Boolean = if (isInterface) {
+            { it == Descriptors.KOTLIN_METADATA }
+        } else {
+            { it.startsWith("Lorg/spongepowered") }
+        }
 
         override fun visit(
             version: Int,
@@ -72,7 +76,7 @@ class JavaGenerator(private val pkg: String, private val file: File) {
         }
 
         override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
-            if (replace.any { descriptor == it }) {
+            if (replace(descriptor)) {
                 return null
             }
             return super.visitAnnotation(descriptor, visible)
@@ -94,7 +98,7 @@ class JavaGenerator(private val pkg: String, private val file: File) {
             )
             return object : MethodVisitor(ASM9, superVisitor) {
                 override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
-                    if (replace.any { descriptor == it }) {
+                    if (replace(descriptor)) {
                         return null
                     }
                     return super.visitAnnotation(descriptor, visible)
@@ -114,7 +118,8 @@ class JavaGenerator(private val pkg: String, private val file: File) {
     }
 
     private fun removeOldAnnotations() {
-        val genDir = if (isInterface) file.parentFile else file.parentFile.resolveSibling("${pkg.substringAfterLast('.')}-impl")
+        val genDir =
+            if (isInterface) file.parentFile else file.parentFile.resolveSibling("${pkg.substringAfterLast('.')}-impl")
         genDir.mkdirs()
         val writer = ClassWriter(reader, 0)
         val visitor = ImplEditor(writer)
