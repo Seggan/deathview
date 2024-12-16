@@ -103,6 +103,25 @@ class JavaGenerator(private val pkg: String, private val file: File) {
                     }
                     return super.visitAnnotation(descriptor, visible)
                 }
+
+                override fun visitFieldInsn(
+                    opcode: Int,
+                    owner: String,
+                    name: String,
+                    descriptor: String?
+                ) {
+                    super.visitFieldInsn(opcode, if (owner == mixinName) implName else owner, name, descriptor)
+                }
+
+                override fun visitMethodInsn(
+                    opcode: Int,
+                    owner: String,
+                    name: String,
+                    descriptor: String?,
+                    isInterface: Boolean
+                ) {
+                    super.visitMethodInsn(opcode, if (owner == mixinName) implName else owner, name, descriptor, isInterface)
+                }
             }
         }
     }

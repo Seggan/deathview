@@ -4,6 +4,4 @@ import net.minecraft.client.CameraType
 
 data class DeathSave(val lastCameraType: CameraType, val originalChatOpacity: Double) {
     var opacity = 0f
-
-    var oldAlpha = 0f
 }

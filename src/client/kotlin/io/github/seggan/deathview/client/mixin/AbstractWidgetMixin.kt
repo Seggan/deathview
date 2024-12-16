@@ -10,16 +10,18 @@ import org.spongepowered.asm.mixin.Mixin
 import org.spongepowered.asm.mixin.injection.At
 import org.spongepowered.asm.mixin.injection.Inject
 
+private var oldAlpha = 0f
+
 @Inject(method = ["render"], at = [At("HEAD")])
 private fun AbstractWidgetAccessor.startRender() {
     if (!isOnDeathScreen) return
     val save = DeathViewClient.death!!
-    save.oldAlpha = this.alpha
+    oldAlpha = this.alpha
     this.alpha = save.opacity
 }
 
 @Inject(method = ["render"], at = [At("TAIL")])
 private fun AbstractWidgetAccessor.endRender() {
     if (!isOnDeathScreen) return
-    this.alpha = DeathViewClient.death!!.oldAlpha
+    this.alpha = oldAlpha
 }

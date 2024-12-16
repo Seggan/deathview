@@ -1,11 +1,12 @@
 package io.github.seggan.kmixin.gen
 
 import org.objectweb.asm.*
+import org.objectweb.asm.Opcodes.INVOKEVIRTUAL
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable
 import kotlin.metadata.KmClassifier
 import kotlin.metadata.isInline
 import kotlin.metadata.jvm.KotlinClassMetadata
-import kotlin.metadata.jvm.Metadata
 import kotlin.metadata.jvm.signature
 
 class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenerator) :
@@ -78,7 +79,7 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         name: String,
         descriptor: String,
         signature: String?,
-        value: Any
+        value: Any?
     ): FieldVisitor? {
         return null
     }
@@ -100,9 +101,19 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         }
 
         val type = Type.getMethodType(descriptor)
+        var returnType = type.returnType
         val argumentTypes = type.argumentTypes.toMutableList()
-        if (!argumentTypes.any { it.descriptor == Descriptors.SPONGE_CALLBACK_INFO } && annotations.any { it == Descriptors.SPONGE_INJECT }) {
-            argumentTypes.add(Type.getType(CallbackInfo::class.java))
+        val isInject = if (annotations.any { it == Descriptors.SPONGE_INJECT }) {
+            if (type.returnType == Type.VOID_TYPE && !argumentTypes.any { it.descriptor == Descriptors.SPONGE_CALLBACK_INFO }) {
+                argumentTypes.add(Type.getType(CallbackInfo::class.java))
+            } else if (!argumentTypes.any { it.descriptor == Descriptors.SPONGE_CALLBACK_INFO_RETURNABLE }) {
+                argumentTypes.removeLast()
+                argumentTypes.add(Type.getType(CallbackInfoReturnable::class.java))
+                returnType = Type.VOID_TYPE
+            }
+            true
+        } else {
+            false
         }
 
         val receiverType: String?
@@ -136,7 +147,7 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
             receiverType = null
         }
 
-        val newType = Type.getMethodType(type.returnType, *argumentTypes.toTypedArray())
+        val newType = Type.getMethodType(returnType, *argumentTypes.toTypedArray())
         return WrappedMethodGenerator(
             super.visitMethod(
                 newAccess,
@@ -147,7 +158,8 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
             ),
             name,
             type,
-            receiverType
+            receiverType,
+            isInject
         )
     }
 
@@ -155,8 +167,11 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         private val delegate: MethodVisitor,
         private val name: String,
         private val type: Type,
-        private val castType: String?
+        private val castType: String?,
+        private val isInject: Boolean
     ) : MethodVisitor(Opcodes.ASM9) {
+
+        private val isCir = type.returnType != Type.VOID_TYPE && isInject
 
         override fun visitCode() {
             delegate.visitCode()
@@ -166,11 +181,38 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
                 delegate.visitTypeInsn(Opcodes.CHECKCAST, castType)
                 i++
             }
+            val cirIndex = i
+            val ret = type.returnType
+            if (isCir) {
+                if (i < type.argumentTypes.size) {
+                    delegate.visitVarInsn(Opcodes.ALOAD, i)
+                    val name = if (ret.sort == Type.OBJECT || ret.sort == Type.ARRAY) {
+                        "getReturnValue"
+                    } else {
+                        "getReturnValue${ret.descriptor}"
+                    }
+                    val descriptor = if (ret.sort == Type.OBJECT || ret.sort == Type.ARRAY) {
+                        "()Ljava/lang/Object;"
+                    } else {
+                        "()" + ret.descriptor
+                    }
+                    delegate.visitMethodInsn(
+                        INVOKEVIRTUAL,
+                        callbackInfoReturnableName,
+                        name,
+                        descriptor,
+                        false
+                    )
+                    if (ret.sort == Type.OBJECT || ret.sort == Type.ARRAY) {
+                        delegate.visitTypeInsn(Opcodes.CHECKCAST, ret.internalName)
+                    }
+                }
+                i++
+            }
             while (i < type.argumentTypes.size) {
                 delegate.visitVarInsn(type.argumentTypes[i].getOpcode(Opcodes.ILOAD), i)
                 i++
             }
-            Metadata()
             delegate.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
                 generator.implName,
@@ -178,7 +220,23 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
                 type.descriptor,
                 false
             )
-            delegate.visitInsn(type.returnType.getOpcode(Opcodes.IRETURN))
+            if (isCir) {
+                delegate.box(ret)
+                delegate.visitVarInsn(Opcodes.ALOAD, cirIndex)
+                delegate.visitInsn(Opcodes.SWAP)
+                delegate.visitMethodInsn(
+                    INVOKEVIRTUAL,
+                    callbackInfoReturnableName,
+                    "setReturnValue",
+                    "(Ljava/lang/Object;)V",
+                    false
+                )
+            }
+            if (isInject) {
+                delegate.visitInsn(Opcodes.RETURN)
+            } else {
+                delegate.visitInsn(type.returnType.getOpcode(Opcodes.IRETURN))
+            }
             delegate.visitEnd()
         }
 
@@ -187,3 +245,29 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         }
     }
 }
+
+private val Type.boxed: Type?
+    get() = when (sort) {
+        Type.BOOLEAN -> Type.getType(Boolean::class.java)
+        Type.BYTE -> Type.getType(Byte::class.java)
+        Type.SHORT -> Type.getType(Short::class.java)
+        Type.CHAR -> Type.getType(Character::class.java)
+        Type.INT -> Type.getType(Integer::class.java)
+        Type.LONG -> Type.getType(Long::class.java)
+        Type.FLOAT -> Type.getType(Float::class.java)
+        Type.DOUBLE -> Type.getType(Double::class.java)
+        else -> null
+    }
+
+private fun MethodVisitor.box(type: Type) {
+    val boxed = type.boxed ?: return
+    visitMethodInsn(
+        Opcodes.INVOKESTATIC,
+        boxed.internalName,
+        "valueOf",
+        "(${type.descriptor})L${boxed.internalName};",
+        false
+    )
+}
+
+private val callbackInfoReturnableName = Type.getType(CallbackInfoReturnable::class.java).internalName
