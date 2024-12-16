@@ -2,7 +2,10 @@ package io.github.seggan.kmixin.gen
 
 import org.objectweb.asm.*
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo
+import kotlin.metadata.KmClassifier
+import kotlin.metadata.jvm.KotlinClassMetadata
 import kotlin.metadata.jvm.Metadata
+import kotlin.metadata.jvm.signature
 
 class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenerator) :
     ClassVisitor(Opcodes.ASM9, delegate) {
@@ -16,7 +19,7 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         interfaces: Array<out String>
     ) {
         if (Opcodes.ACC_RECORD and access != 0) {
-            throw IllegalStateException("Records are not supported")
+            throw MixinGenerationException("Records are not supported")
         }
         super.visit(version, access, generator.mixinName, signature, superName, interfaces)
     }
@@ -89,17 +92,42 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         val annotations = generator.annotations[name + descriptor] ?: return null
         if (Descriptors.SPONGE_INJECT !in annotations) return null
         if (Opcodes.ACC_STATIC and access == 0) {
-            throw IllegalStateException("Non-static methods are not supported")
+            throw MixinGenerationException("Non-static methods are not supported")
         }
+        if (Opcodes.ACC_PRIVATE and access == 0) {
+            throw MixinGenerationException("All methods in a mixin must be private")
+        }
+
         val type = Type.getMethodType(descriptor)
         val argumentTypes = type.argumentTypes.toMutableList()
         if (!argumentTypes.any { it.descriptor == Descriptors.SPONGE_CALLBACK_INFO }) {
             argumentTypes.add(Type.getType(CallbackInfo::class.java))
         }
+
+        val receiverType: String?
+        var newAccess = access
+        if (generator.metadata is KotlinClassMetadata.FileFacade) {
+            val pkg = generator.metadata.kmPackage
+            val func = pkg.functions.first { it.name == name && it.signature?.descriptor == descriptor }
+            if (func.receiverParameterType != null) {
+                val classifier = func.receiverParameterType!!.classifier
+                if (classifier !is KmClassifier.Class) {
+                    throw MixinGenerationException("Unsupported receiver type: $classifier")
+                }
+                receiverType = classifier.name
+                newAccess = newAccess and Opcodes.ACC_STATIC.inv()
+                argumentTypes.removeAt(0)
+            } else {
+                receiverType = null
+            }
+        } else {
+            receiverType = null
+        }
+
         val newType = Type.getMethodType(type.returnType, *argumentTypes.toTypedArray())
         return WrappedMethodGenerator(
             super.visitMethod(
-                access and (Opcodes.ACC_STATIC.inv()),
+                newAccess,
                 name,
                 newType.descriptor,
                 signature,
@@ -107,7 +135,7 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
             ),
             name,
             type,
-            null
+            receiverType
         )
     }
 
@@ -115,15 +143,22 @@ class WrapperGenerator(delegate: ClassVisitor, private val generator: JavaGenera
         private val delegate: MethodVisitor,
         private val name: String,
         private val type: Type,
-        private val castType: Type?
+        private val castType: String?
     ) : MethodVisitor(Opcodes.ASM9) {
 
         private val annotations = mutableSetOf<String>()
 
         override fun visitCode() {
             delegate.visitCode()
-            for ((i, arg) in type.argumentTypes.withIndex()) {
-                delegate.visitVarInsn(arg.getOpcode(Opcodes.ILOAD), i + 1)
+            var i = 0
+            if (castType != null) {
+                delegate.visitVarInsn(Opcodes.ALOAD, 0)
+                delegate.visitTypeInsn(Opcodes.CHECKCAST, castType)
+                i++
+            }
+            while (i < type.argumentTypes.size) {
+                delegate.visitVarInsn(type.argumentTypes[i].getOpcode(Opcodes.ILOAD), i + 1)
+                i++
             }
             Metadata()
             delegate.visitMethodInsn(

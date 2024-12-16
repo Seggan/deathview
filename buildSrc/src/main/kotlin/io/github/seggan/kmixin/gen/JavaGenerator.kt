@@ -57,7 +57,7 @@ class JavaGenerator(private val pkg: String, private val file: File) {
         }
     }
 
-    private inner class AnnotationReplacer(delegate: ClassVisitor) : ClassVisitor(ASM9, delegate) {
+    private inner class ImplEditor(delegate: ClassVisitor) : ClassVisitor(ASM9, delegate) {
         private val replace = if (isInterface) listOf(Descriptors.KOTLIN_METADATA) else listOf(Descriptors.SPONGE_MIXIN, Descriptors.SPONGE_INJECT)
 
         override fun visit(
@@ -85,7 +85,13 @@ class JavaGenerator(private val pkg: String, private val file: File) {
             signature: String?,
             exceptions: Array<out String>?
         ): MethodVisitor {
-            val superVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
+            val superVisitor = super.visitMethod(
+                access and Opcodes.ACC_PRIVATE.inv() or Opcodes.ACC_PUBLIC,
+                name,
+                descriptor,
+                signature,
+                exceptions
+            )
             return object : MethodVisitor(ASM9, superVisitor) {
                 override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
                     if (replace.any { descriptor == it }) {
@@ -111,7 +117,7 @@ class JavaGenerator(private val pkg: String, private val file: File) {
         val genDir = if (isInterface) file.parentFile else file.parentFile.resolveSibling("${pkg.substringAfterLast('.')}-impl")
         genDir.mkdirs()
         val writer = ClassWriter(reader, 0)
-        val visitor = AnnotationReplacer(writer)
+        val visitor = ImplEditor(writer)
         reader.accept(visitor, 0)
         genDir.resolve(file.name).writeBytes(writer.toByteArray())
     }

@@ -4,6 +4,7 @@
 package io.github.seggan.deathview.client.mixin
 
 import io.github.seggan.deathview.client.DeathSave
+import io.github.seggan.deathview.client.DeathViewClient
 import io.github.seggan.deathview.client.percentage
 import net.minecraft.client.CameraType
 import net.minecraft.client.Minecraft
@@ -15,27 +16,27 @@ import org.spongepowered.asm.mixin.injection.At
 import org.spongepowered.asm.mixin.injection.Inject
 
 @Inject(method = ["render"], at = [At("TAIL")])
-fun tickDeathScreen() {
-    if (!DeathSave.recentDeath) return
+private fun tickDeathScreen() {
+    val save = DeathViewClient.death ?: return
     val client = Minecraft.getInstance()
     val currentScreen = client.screen
     if (currentScreen !is DeathScreen) return
     val accessor = currentScreen as DeathScreenAccessor
-    DeathSave.opacity = if (accessor.ticksSinceDeath <= 30) {
+    save.opacity = if (accessor.ticksSinceDeath <= 30) {
         0f
     } else {
         (30..70).percentage(accessor.ticksSinceDeath).coerceIn(0.0, 1.0).toFloat()
     }
-    client.options.textBackgroundOpacity().set(DeathSave.originalChatOpacity * DeathSave.opacity)
+    client.options.textBackgroundOpacity().set(save.originalChatOpacity * save.opacity)
 }
 
 @Inject(method = ["<init>"], at = [At("RETURN")])
-fun onDeath() {
-    DeathSave.recentDeath = true
+private fun onDeath() {
     val client = Minecraft.getInstance()
     val options = client.options
-    DeathSave.originalChatOpacity = options.textBackgroundOpacity().get()
-    DeathSave.lastCameraType = options.cameraType
+    val originalChatOpacity = options.textBackgroundOpacity().get()
+    val lastCameraType = options.cameraType
+    DeathViewClient.death = DeathSave(lastCameraType, originalChatOpacity)
     val player = client.player
     if (player == null) {
         options.cameraType = CameraType.THIRD_PERSON_BACK

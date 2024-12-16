@@ -1,6 +1,7 @@
 package io.github.seggan.kmixin
 
 import io.github.seggan.kmixin.gen.JavaGenerator
+import io.github.seggan.kmixin.gen.MixinGenerationException
 import kotlinx.serialization.json.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
@@ -26,11 +27,15 @@ open class GenerationTask : DefaultTask() {
                 if (!mixinFile.exists()) continue
                 val generator = try {
                     JavaGenerator(pkg, mixinFile)
-                } catch (e: IllegalStateException) {
-                    logger.error("Failed to generate implementation for $mixin", e)
+                } catch (_: IllegalStateException) {
+                    // No Kotlin metadata, skip
                     continue
                 }
-                generator.doStuff()
+                try {
+                    generator.doStuff()
+                } catch (e: MixinGenerationException) {
+                    throw MixinGenerationException("Failed to generate implementation for $mixin: ${e.message}")
+                }
             }
         }
     }

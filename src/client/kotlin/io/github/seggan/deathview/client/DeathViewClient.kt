@@ -6,4 +6,8 @@ class DeathViewClient : ClientModInitializer {
 
     override fun onInitializeClient() {
     }
+
+    companion object {
+        var death: DeathSave? = null
+    }
 }

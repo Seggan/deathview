@@ -3,7 +3,8 @@
 
 package io.github.seggan.deathview.client.mixin
 
-import io.github.seggan.deathview.client.DeathSave
+import io.github.seggan.deathview.client.DeathViewClient
+import net.minecraft.client.CameraType
 import net.minecraft.client.Minecraft
 import net.minecraft.client.player.LocalPlayer
 import org.spongepowered.asm.mixin.Mixin
@@ -11,9 +12,10 @@ import org.spongepowered.asm.mixin.injection.At
 import org.spongepowered.asm.mixin.injection.Inject
 
 @Inject(method = ["respawn"], at = [At("TAIL")])
-fun respawn() {
+private fun respawn() {
     val options = Minecraft.getInstance().options
-    options.cameraType = DeathSave.lastCameraType
-    options.textBackgroundOpacity().set(DeathSave.originalChatOpacity)
-    DeathSave.recentDeath = false
+    val save = DeathViewClient.death
+    options.cameraType = save?.lastCameraType ?: CameraType.FIRST_PERSON
+    options.textBackgroundOpacity().set(save?.originalChatOpacity ?: .5)
+    DeathViewClient.death = null
 }
