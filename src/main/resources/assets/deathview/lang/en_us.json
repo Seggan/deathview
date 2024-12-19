@@ -1,0 +1,8 @@
+{
+  "text.autoconfig.deathview.title": "DeathView",
+  "text.autoconfig.deathview.option.screen": "Death screen",
+  "text.autoconfig.deathview.option.screen.fade": "Fade screen",
+  "text.autoconfig.deathview.option.screen.fadeDelay": "Fade delay",
+  "text.autoconfig.deathview.option.screen.fadeDuration": "Fade duration",
+  "text.autoconfig.deathview.option.backCheck": "Checked back blocks"
+}

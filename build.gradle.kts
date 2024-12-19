@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.0.21"
+    kotlin("plugin.serialization") version "2.0.21"
     id("fabric-loom")
     id("maven-publish")
     id("com.modrinth.minotaur") version "2.+"
@@ -26,7 +27,7 @@ version = "${mod.version}+${mcVersion}"
 group = mod.group
 
 base {
-    archivesName.set(mod.id)
+    archivesName = mod.id
 }
 
 val targetJavaVersion = if (stonecutter.eval(mcVersion, ">=1.20.6")) 21 else 17
@@ -52,6 +53,12 @@ loom {
 
 repositories {
     maven("https://maven.parchmentmc.org")
+    maven("https://maven.shedaniel.me/") {
+        name = "Cloth"
+    }
+    maven("https://maven.terraformersmc.com/") {
+        name = "ModMenu"
+    }
 }
 
 dependencies {
@@ -63,35 +70,32 @@ dependencies {
     })
     modImplementation("net.fabricmc:fabric-loader:${deps["fabric_loader"]}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${deps["koltin_fabric_loader"]}")
+    modImplementation("me.shedaniel.cloth:cloth-config-fabric:${deps["cloth"]}")
+    modImplementation("com.terraformersmc:modmenu:${deps["modmenu"]}") {
+        exclude("net.fabricmc.fabric-api")
+    }
 }
 
 tasks.processResources {
-    inputs.property("id", mod.id)
-    inputs.property("name", mod.name)
-    inputs.property("version", mod.version)
-    inputs.property("mcdep", mcDep)
-    inputs.property("loader", deps["fabric_loader"])
-    inputs.property("kotlin_loader", deps["koltin_fabric_loader"])
-
     val map = mapOf(
-        "id" to mod.id,
         "name" to mod.name,
         "version" to mod.version,
         "mcdep" to mcDep,
         "loader" to deps["fabric_loader"],
-        "kotlin_loader" to deps["koltin_fabric_loader"]
+        "kotlin_loader" to deps["koltin_fabric_loader"],
+        "cloth" to deps["cloth"]
     )
+
+    for ((key, value) in map) {
+        inputs.property(key, value)
+    }
 
     filesMatching("fabric.mod.json") { expand(map) }
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    // ensure that the encoding is set to UTF-8, no matter what the system default is
-    // this fixes some edge cases with special characters not displaying correctly
-    // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-    // If Javadoc is generated, this must be specified in that task too.
     options.encoding = "UTF-8"
-    options.release.set(targetJavaVersion)
+    options.release = targetJavaVersion
 }
 
 kotlin {
@@ -118,6 +122,8 @@ modrinth {
     uploadFile.set(tasks.remapJar)
     dependencies {
         required.project("fabric-language-kotlin")
+        required.project("cloth-config")
+        optional.project("modmenu")
     }
 
     syncBodyFrom = rootProject.file("README.md").readText()

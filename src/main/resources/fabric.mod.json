@@ -1,17 +1,20 @@
 {
   "schemaVersion": 1,
-  "id": "${id}",
+  "id": "deathview",
   "version": "${version}",
   "name": "${name}",
   "description": "",
   "authors": ["Seggan"],
   "contact": {},
   "license": "GPL-3.0",
-  "icon": "assets/icon.png",
+  "icon": "assets/deathview/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
       "io.github.seggan.deathview.client.DeathViewClient"
+    ],
+    "modmenu": [
+      "io.github.seggan.deathview.client.config.ConfigScreen"
     ]
   },
   "mixins": [
@@ -23,6 +26,7 @@
   "depends": {
     "fabricloader": ">=${loader}",
     "fabric-language-kotlin": ">=${kotlin_loader}",
-    "minecraft": "${mcdep}"
+    "minecraft": "${mcdep}",
+    "cloth-config": ">=${cloth}"
   }
 }
