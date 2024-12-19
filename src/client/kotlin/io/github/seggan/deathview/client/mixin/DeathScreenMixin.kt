@@ -22,10 +22,16 @@ private fun tickDeathScreen() {
     val currentScreen = client.screen
     if (currentScreen !is DeathScreen) return
     val accessor = currentScreen as DeathScreenAccessor
-    save.opacity = if (accessor.ticksSinceDeath <= 30) {
-        0f
+    if (!DeathViewClient.config.screen.fade) {
+        save.opacity = 1f
     } else {
-        (30..70).percentage(accessor.ticksSinceDeath).coerceIn(0.0, 1.0).toFloat()
+        val fadeDelay = DeathViewClient.config.screen.fadeDelay
+        val fadeDuration = DeathViewClient.config.screen.fadeDuration
+        save.opacity = if (accessor.ticksSinceDeath <= fadeDelay) {
+            0f
+        } else {
+            (fadeDelay..(fadeDelay + fadeDuration)).percentage(accessor.ticksSinceDeath).coerceIn(0.0, 1.0).toFloat()
+        }
     }
     client.options.textBackgroundOpacity().set(save.originalChatOpacity * save.opacity)
 }
@@ -43,7 +49,7 @@ private fun onDeath() {
     } else {
         val headPos = player.getEyePosition(1f)
         val cameraDir = player.getViewVector(1f)
-        val twoBlocksBack = headPos.subtract(cameraDir.scale(2.5))
+        val twoBlocksBack = headPos.subtract(cameraDir.scale(DeathViewClient.config.backCheck))
         val clipContext = ClipContext(
             headPos,
             twoBlocksBack,
