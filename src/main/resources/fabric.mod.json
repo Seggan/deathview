@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "deathview",
+  "id": "${id}",
   "version": "${version}",
   "name": "${name}",
   "description": "",

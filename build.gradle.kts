@@ -78,6 +78,7 @@ dependencies {
 
 tasks.processResources {
     val map = mapOf(
+        "id" to mod.id,
         "name" to mod.name,
         "version" to mod.version,
         "mcdep" to mcDep,
