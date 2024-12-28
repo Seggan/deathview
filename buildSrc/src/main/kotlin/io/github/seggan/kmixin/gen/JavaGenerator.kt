@@ -1,148 +1,64 @@
 package io.github.seggan.kmixin.gen
 
-import org.objectweb.asm.*
-import org.objectweb.asm.Opcodes.ASM9
-import java.io.File
-import kotlin.metadata.ClassKind
-import kotlin.metadata.jvm.KotlinClassMetadata
-import kotlin.metadata.kind
+import org.jetbrains.kotlin.spec.grammar.tools.KotlinParseTree
+import org.jetbrains.kotlin.spec.grammar.tools.parseKotlinCode
 
-class JavaGenerator(private val pkg: String, private val file: File) {
+// https://github.com/Kotlin/kotlin-spec/blob/release/grammar/src/main/antlr/KotlinParser.g4
+class JavaGenerator private constructor(private val pkg: String, name: String, code: String) {
 
-    private val reader = ClassReader(file.readBytes())
-    private val slashPkg = pkg.replace('.', '/')
+    private val javaCode = StringBuilder()
 
-    val mixinName = "$slashPkg/${file.nameWithoutExtension}"
-    val implName = "$slashPkg-impl/${file.nameWithoutExtension}"
+    private val ast = parseKotlinCode(code)
+    private val implName = extractJvmName() ?: (name + "Kt")
 
-    val annotations: Map<String, List<String>>
-    val metadata: KotlinClassMetadata
-
-    init {
-        val visitor = AnnotationFinder()
-        reader.accept(visitor, 0)
-        metadata = visitor.metadata ?: error("No Kotlin metadata found in $file")
-        annotations = visitor.annotations
+    private fun generate() {
+        javaCode += "package $pkg.java;\n\n"
+        println(ast)
     }
 
-    private val isInterface = metadata is KotlinClassMetadata.Class && metadata.kmClass.kind == ClassKind.INTERFACE
+    private fun extractJvmName(): String? {
+        val annotations = ast.findChildren(AstNodeName.FILE_ANNOTATION)
+            .mapChildren(AstNodeName.UNESCAPED_ANNOTATION)
+            .mapChildren(AstNodeName.CONSTRUCTOR_INVOCATION)
 
-    private class AnnotationFinder : ClassVisitor(ASM9) {
-
-        var foundMixin = false
-        var metadata: KotlinClassMetadata? = null
-
-        val annotations = mutableMapOf<String, MutableList<String>>()
-
-        override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
-            if (descriptor == Descriptors.KOTLIN_METADATA) {
-                return MetadataReader(::metadata)
-            }
-            return null
-        }
-
-        override fun visitMethod(
-            access: Int,
-            name: String,
-            descriptor: String,
-            signature: String?,
-            exceptions: Array<out String>?
-        ): MethodVisitor {
-            return object : MethodVisitor(ASM9) {
-                override fun visitAnnotation(aDescriptor: String, visible: Boolean): AnnotationVisitor? {
-                    annotations.computeIfAbsent(name + descriptor) { mutableListOf() }.add(aDescriptor)
-                    return null
-                }
+        for (annotation in annotations) {
+            if (annotation.findChildOrNull(AstNodeName.USER_TYPE)?.allText == "JvmName") {
+                return annotation.findChildrenRecursive(AstNodeName.STRING_LITERAL).first().allText.trim { it == '"' }
             }
         }
+
+        return null
     }
 
-    private inner class ImplEditor(delegate: ClassVisitor) : ClassVisitor(ASM9, delegate) {
-        private val replace: (String) -> Boolean = if (isInterface) {
-            { it == Descriptors.KOTLIN_METADATA }
-        } else {
-            { it.startsWith("Lorg/spongepowered") }
+    companion object {
+        fun generate(pkg: String, name: String, source: String): String {
+            val generator = JavaGenerator(pkg, name, source)
+            generator.generate()
+            return generator.javaCode.toString()
         }
-
-        override fun visit(
-            version: Int,
-            access: Int,
-            name: String,
-            signature: String?,
-            superName: String,
-            interfaces: Array<out String>?
-        ) {
-            super.visit(version, access, if (isInterface) mixinName else implName, signature, superName, interfaces)
-        }
-
-        override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
-            if (replace(descriptor)) {
-                return null
-            }
-            return super.visitAnnotation(descriptor, visible)
-        }
-
-        override fun visitMethod(
-            access: Int,
-            name: String?,
-            descriptor: String?,
-            signature: String?,
-            exceptions: Array<out String>?
-        ): MethodVisitor {
-            val superVisitor = super.visitMethod(
-                access and Opcodes.ACC_PRIVATE.inv() or Opcodes.ACC_PUBLIC,
-                name,
-                descriptor,
-                signature,
-                exceptions
-            )
-            return object : MethodVisitor(ASM9, superVisitor) {
-                override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
-                    if (replace(descriptor)) {
-                        return null
-                    }
-                    return super.visitAnnotation(descriptor, visible)
-                }
-
-                override fun visitFieldInsn(
-                    opcode: Int,
-                    owner: String,
-                    name: String,
-                    descriptor: String?
-                ) {
-                    super.visitFieldInsn(opcode, if (owner == mixinName) implName else owner, name, descriptor)
-                }
-
-                override fun visitMethodInsn(
-                    opcode: Int,
-                    owner: String,
-                    name: String,
-                    descriptor: String?,
-                    isInterface: Boolean
-                ) {
-                    super.visitMethodInsn(opcode, if (owner == mixinName) implName else owner, name, descriptor, isInterface)
-                }
-            }
-        }
-    }
-
-    fun doStuff() {
-        if (!isInterface) {
-            val writer = ClassWriter(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES)
-            val visitor = WrapperGenerator(writer, this)
-            reader.accept(visitor, 0)
-            file.writeBytes(writer.toByteArray())
-        }
-        removeOldAnnotations()
-    }
-
-    private fun removeOldAnnotations() {
-        val genDir =
-            if (isInterface) file.parentFile else file.parentFile.resolveSibling("${pkg.substringAfterLast('.')}-impl")
-        genDir.mkdirs()
-        val writer = ClassWriter(reader, 0)
-        val visitor = ImplEditor(writer)
-        reader.accept(visitor, 0)
-        genDir.resolve(file.name).writeBytes(writer.toByteArray())
     }
 }
+
+private operator fun StringBuilder.plusAssign(value: String) {
+    append(value)
+}
+
+private fun KotlinParseTree.findChildOrNull(name: String): KotlinParseTree? {
+    return children.firstOrNull { it.name == name }
+}
+
+private fun KotlinParseTree.findChildren(name: String): List<KotlinParseTree> {
+    return children.filter { it.name == name }
+}
+
+private fun KotlinParseTree.findChildrenRecursive(name: String): List<KotlinParseTree> {
+    if (this.name == name) return listOf(this)
+    return children.flatMap { it.findChildrenRecursive(name) }
+}
+
+private fun List<KotlinParseTree>.mapChildren(name: String): List<KotlinParseTree> {
+    return flatMap { it.findChildren(name) }
+}
+
+private val KotlinParseTree.allText: String
+    get() = text.orEmpty() + children.joinToString("") { it.allText }

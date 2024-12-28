@@ -1,5 +1,6 @@
 plugins {
     `kotlin-dsl`
+    id("com.gradleup.shadow") version "8.3.2"
 }
 
 repositories {
@@ -8,10 +9,9 @@ repositories {
 }
 
 dependencies {
-    implementation("org.ow2.asm:asm:9.7.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.spongepowered:mixin:0.8.7")
-    implementation("org.jetbrains.kotlin:kotlin-metadata-jvm:2.0.20")
+    implementation(files("libs/kotlin-grammar-parser-0.1.jar", "libs/kotlin-grammar-tools-0.1.jar"))
 }
 
 kotlin {
