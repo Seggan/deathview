@@ -1,0 +1,58 @@
+{
+  "mappings": {
+    "io/github/seggan/deathview/client/mixin/AbstractWidgetAccessor": {
+      "alpha": "field_22765:F"
+    },
+    "io/github/seggan/deathview/client/mixin/AbstractWidgetMixin": {
+      "render": "Lnet/minecraft/class_339;method_25394(Lnet/minecraft/class_332;IIF)V"
+    },
+    "io/github/seggan/deathview/client/mixin/DeathScreenAccessor": {
+      "delayTicker": "field_2451:I"
+    },
+    "io/github/seggan/deathview/client/mixin/DeathScreenMixin": {
+      "<init>": "Lnet/minecraft/class_418;<init>(Lnet/minecraft/class_2561;Z)V",
+      "render": "Lnet/minecraft/class_418;method_25394(Lnet/minecraft/class_332;IIF)V"
+    },
+    "io/github/seggan/deathview/client/mixin/FontMixin": {
+      "adjustColor": "Lnet/minecraft/class_327;method_27515(I)I"
+    },
+    "io/github/seggan/deathview/client/mixin/GameRendererMixin": {
+      "Lnet/minecraft/world/entity/LivingEntity;deathTime:I": "Lnet/minecraft/class_1309;field_6213:I",
+      "Lnet/minecraft/world/entity/LivingEntity;isDeadOrDying()Z": "Lnet/minecraft/class_1309;method_29504()Z",
+      "bobHurt": "Lnet/minecraft/class_757;method_3198(Lnet/minecraft/class_4587;F)V",
+      "getFov": "Lnet/minecraft/class_757;method_3196(Lnet/minecraft/class_4184;FZ)D"
+    },
+    "io/github/seggan/deathview/client/mixin/LocalPlayerMixin": {
+      "respawn": "Lnet/minecraft/class_746;method_7331()V"
+    }
+  },
+  "data": {
+    "named:intermediary": {
+      "io/github/seggan/deathview/client/mixin/AbstractWidgetAccessor": {
+        "alpha": "field_22765:F"
+      },
+      "io/github/seggan/deathview/client/mixin/AbstractWidgetMixin": {
+        "render": "Lnet/minecraft/class_339;method_25394(Lnet/minecraft/class_332;IIF)V"
+      },
+      "io/github/seggan/deathview/client/mixin/DeathScreenAccessor": {
+        "delayTicker": "field_2451:I"
+      },
+      "io/github/seggan/deathview/client/mixin/DeathScreenMixin": {
+        "<init>": "Lnet/minecraft/class_418;<init>(Lnet/minecraft/class_2561;Z)V",
+        "render": "Lnet/minecraft/class_418;method_25394(Lnet/minecraft/class_332;IIF)V"
+      },
+      "io/github/seggan/deathview/client/mixin/FontMixin": {
+        "adjustColor": "Lnet/minecraft/class_327;method_27515(I)I"
+      },
+      "io/github/seggan/deathview/client/mixin/GameRendererMixin": {
+        "Lnet/minecraft/world/entity/LivingEntity;deathTime:I": "Lnet/minecraft/class_1309;field_6213:I",
+        "Lnet/minecraft/world/entity/LivingEntity;isDeadOrDying()Z": "Lnet/minecraft/class_1309;method_29504()Z",
+        "bobHurt": "Lnet/minecraft/class_757;method_3198(Lnet/minecraft/class_4587;F)V",
+        "getFov": "Lnet/minecraft/class_757;method_3196(Lnet/minecraft/class_4184;FZ)D"
+      },
+      "io/github/seggan/deathview/client/mixin/LocalPlayerMixin": {
+        "respawn": "Lnet/minecraft/class_746;method_7331()V"
+      }
+    }
+  }
+}
