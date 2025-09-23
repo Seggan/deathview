@@ -1,9 +1,9 @@
 plugins {
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm")
     id("fabric-loom")
     id("maven-publish")
-    id("com.modrinth.minotaur") version "2.+"
-    id("io.github.seggan.kotlin-mixin-plugin")
+    id("com.modrinth.minotaur")
+    id("com.google.devtools.ksp")
     id("com.dorongold.task-tree") version "4.0.0"
 }
 
@@ -52,6 +52,7 @@ loom {
 }
 
 repositories {
+    mavenLocal()
     maven("https://maven.parchmentmc.org")
 }
 
@@ -64,6 +65,8 @@ dependencies {
     })
     modImplementation("net.fabricmc:fabric-loader:${deps["fabric_loader"]}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${deps["koltin_fabric_loader"]}")
+
+    ksp("io.github.seggan:kmixin:0.1.0-SNAPSHOT")
 }
 
 tasks.processResources {

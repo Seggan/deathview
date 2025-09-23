@@ -8,16 +8,12 @@ pluginManagement {
 }
 
 plugins {
-    id("dev.kikugie.stonecutter") version "0.4.6"
+    id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
+    id("dev.kikugie.stonecutter") version "0.7.10"
 }
 
 stonecutter {
-    kotlinController = true
-    centralScript = "build.gradle.kts"
-
-    shared {
+    create(rootProject) {
         versions("1.20.6", "1.21.1", "1.21.3", "1.21.4")
     }
-
-    create(rootProject)
 }
