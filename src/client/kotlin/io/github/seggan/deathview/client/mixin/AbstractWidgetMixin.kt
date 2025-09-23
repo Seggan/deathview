@@ -1,4 +1,3 @@
-@file:JvmName("AbstractWidgetMixin")
 @file:Mixin(AbstractWidget::class)
 
 package io.github.seggan.deathview.client.mixin
@@ -10,10 +9,10 @@ import org.spongepowered.asm.mixin.Mixin
 import org.spongepowered.asm.mixin.injection.At
 import org.spongepowered.asm.mixin.injection.Inject
 
-private var oldAlpha = 0f
+private var oldAlpha = 1f
 
 @Inject(method = ["render"], at = [At("HEAD")])
-private fun AbstractWidgetAccessor.startRender() {
+internal fun AbstractWidgetAccessor.startRender() {
     if (!isOnDeathScreen) return
     val save = DeathViewClient.death!!
     oldAlpha = this.alpha
@@ -21,7 +20,7 @@ private fun AbstractWidgetAccessor.startRender() {
 }
 
 @Inject(method = ["render"], at = [At("TAIL")])
-private fun AbstractWidgetAccessor.endRender() {
+internal fun AbstractWidgetAccessor.endRender() {
     if (!isOnDeathScreen) return
     this.alpha = oldAlpha
 }

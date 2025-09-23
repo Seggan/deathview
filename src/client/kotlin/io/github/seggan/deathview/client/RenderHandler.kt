@@ -1,11 +1,7 @@
-@file:JvmName("RenderHandler")
-
 package io.github.seggan.deathview.client
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.DeathScreen
-
-
 
 fun IntRange.percentage(value: Int): Double {
     return (value - first) / (last - first).toDouble()

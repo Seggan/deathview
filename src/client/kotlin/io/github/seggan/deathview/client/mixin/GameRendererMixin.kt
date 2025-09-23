@@ -1,6 +1,4 @@
-@file:JvmName("GameRendererMixin")
 @file:Mixin(GameRenderer::class)
-@file:Suppress("NOTHING_TO_INLINE")
 
 package io.github.seggan.deathview.client.mixin
 
@@ -21,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo
     )],
     cancellable = true
 )
-private inline fun cancelDeathTilt(ci: CallbackInfo) {
+internal fun cancelDeathTilt(ci: CallbackInfo) {
     ci.cancel()
 }
 
@@ -30,6 +28,6 @@ private inline fun cancelDeathTilt(ci: CallbackInfo) {
     at = At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isDeadOrDying()Z")
 )
 @Suppress("unused")
-private fun cancelZoomOnDeath(entity: LivingEntity): Boolean {
+internal fun cancelZoomOnDeath(entity: LivingEntity): Boolean {
     return false
 }

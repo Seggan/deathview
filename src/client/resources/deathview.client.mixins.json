@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "io.github.seggan.deathview.client.mixin",
+  "package": "io.github.seggan.deathview.client.mixin.impl",
   "compatibilityLevel": "JAVA_21",
   "client": [
     "AbstractWidgetAccessor",

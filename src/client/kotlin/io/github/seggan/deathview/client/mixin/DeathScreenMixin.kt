@@ -1,4 +1,3 @@
-@file:JvmName("DeathScreenMixin")
 @file:Mixin(DeathScreen::class)
 
 package io.github.seggan.deathview.client.mixin
@@ -16,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.At
 import org.spongepowered.asm.mixin.injection.Inject
 
 @Inject(method = ["render"], at = [At("TAIL")])
-private fun tickDeathScreen() {
+internal fun tickDeathScreen() {
     val save = DeathViewClient.death ?: return
     val client = Minecraft.getInstance()
     val currentScreen = client.screen
@@ -31,7 +30,7 @@ private fun tickDeathScreen() {
 }
 
 @Inject(method = ["<init>"], at = [At("RETURN")])
-private fun onDeath() {
+internal fun onDeath() {
     val client = Minecraft.getInstance()
     val options = client.options
     val originalChatOpacity = options.textBackgroundOpacity().get()
