@@ -1,15 +1,13 @@
-@file:Mixin(Font::class)
-
+@file:Mixin(targets = [$$"net.minecraft.client.gui.Font$PreparedTextBuilder"])
 package io.github.seggan.deathview.client.mixin
 
 import io.github.seggan.deathview.client.DeathViewClient
 import io.github.seggan.deathview.client.isOnDeathScreen
-import net.minecraft.client.gui.Font
 import org.spongepowered.asm.mixin.Mixin
 import org.spongepowered.asm.mixin.injection.At
 import org.spongepowered.asm.mixin.injection.Inject
 
-@Inject(method = ["adjustColor"], at = [At("RETURN")], cancellable = true)
+@Inject(method = ["getTextColor"], at = [At("RETURN")], cancellable = true)
 internal fun modifyAlpha(argb: Int): Int {
     if (!isOnDeathScreen) return argb
     val opacity = (DeathViewClient.death!!.opacity * 255).toInt()

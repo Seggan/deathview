@@ -66,7 +66,7 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${deps["fabric_loader"]}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${deps["koltin_fabric_loader"]}")
 
-    ksp("io.github.seggan:kmixin:0.1.1")
+    ksp("io.github.seggan:kmixin:0.1.2")
 }
 
 tasks.processResources {

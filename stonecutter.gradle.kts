@@ -5,4 +5,11 @@ plugins {
     id("com.modrinth.minotaur") version "2.+" apply false
     id("com.google.devtools.ksp") version "2.2.10-2.0.2" apply false
 }
-stonecutter active "1.21.4"
+stonecutter active "1.21.8"
+
+stonecutter parameters {
+    replacements.string {
+        direction = eval(current.version, ">=1.21.8")
+        replace("\"FontMixin\"", "\"PreparedTextBuilderMixin\"")
+    }
+}
