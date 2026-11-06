@@ -1,10 +1,8 @@
 plugins {
     kotlin("jvm")
-    id("fabric-loom")
+    id("net.fabricmc.fabric-loom")
     id("maven-publish")
     id("com.modrinth.minotaur")
-    id("com.google.devtools.ksp")
-    id("com.dorongold.task-tree") version "4.0.0"
 }
 
 class ModData {
@@ -30,7 +28,7 @@ base {
     archivesName.set(mod.id)
 }
 
-val targetJavaVersion = if (stonecutter.eval(mcVersion, ">=1.20.6")) 21 else 17
+val targetJavaVersion = 25
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
@@ -52,21 +50,15 @@ loom {
 }
 
 repositories {
-    mavenLocal()
-    maven("https://maven.parchmentmc.org")
+    maven("https://maven.fabricmc.net/")
+    maven("https://repo1.maven.org/maven2")
 }
 
 dependencies {
     minecraft("com.mojang:minecraft:$mcVersion")
-    @Suppress("UnstableApiUsage")
-    mappings(loom.layered {
-        officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-${deps["parchment"]}@zip")
-    })
-    modImplementation("net.fabricmc:fabric-loader:${deps["fabric_loader"]}")
-    modImplementation("net.fabricmc:fabric-language-kotlin:${deps["koltin_fabric_loader"]}")
+    implementation("net.fabricmc:fabric-loader:${deps["fabric_loader"]}")
+    implementation("net.fabricmc:fabric-language-kotlin:${deps["koltin_fabric_loader"]}")
 
-    ksp("io.github.seggan:kmixin:0.1.2")
 }
 
 tasks.processResources {
@@ -110,16 +102,16 @@ tasks.jar {
 
 tasks.register<Copy>("buildAndCollect") {
     group = "build"
-    from(tasks.remapJar.get().archiveFile)
+    from(tasks.jar.get().archiveFile)
     into(rootProject.layout.buildDirectory.file("libs/${mod.version}"))
     dependsOn("build")
 }
 
 modrinth {
-    token = property("modrinth.token").toString()
+    token = findProperty("modrinth.token")?.toString() ?: ""
     projectId = mod.id
     versionNumber = project.version.toString()
-    uploadFile.set(tasks.remapJar)
+    uploadFile.set(tasks.jar)
     dependencies {
         required.project("fabric-language-kotlin")
     }
