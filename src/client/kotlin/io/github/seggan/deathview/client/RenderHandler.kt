@@ -8,4 +8,4 @@ fun IntRange.percentage(value: Int): Double {
 }
 
 val isOnDeathScreen: Boolean
-    get() = DeathViewClient.death != null && Minecraft.getInstance().screen is DeathScreen
+    get() = DeathViewClient.death != null && Minecraft.getInstance().gui.screen() is DeathScreen

@@ -1,15 +1,15 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "io.github.seggan.deathview.client.mixin.impl",
-  "compatibilityLevel": "JAVA_21",
+  "package": "io.github.seggan.deathview.client.mixin",
+  "compatibilityLevel": "JAVA_25",
   "client": [
-    "AbstractWidgetAccessor",
     "AbstractWidgetMixin",
-    "LocalPlayerMixin",
+    "CameraMixin",
     "DeathScreenAccessor",
     "DeathScreenMixin",
     "GameRendererMixin",
+    "LocalPlayerMixin",
     "PreparedTextBuilderMixin"
   ],
   "injectors": {

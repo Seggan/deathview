@@ -1,15 +1,7 @@
 plugins {
     id("dev.kikugie.stonecutter")
-    kotlin("jvm") version "2.2.10" apply false
-    id("fabric-loom") version "1.11-SNAPSHOT" apply false
+    kotlin("jvm") version "2.4.21" apply false
+    id("net.fabricmc.fabric-loom") version "1.19.3" apply false
     id("com.modrinth.minotaur") version "2.+" apply false
-    id("com.google.devtools.ksp") version "2.2.10-2.0.2" apply false
 }
-stonecutter active "1.21.8"
-
-stonecutter parameters {
-    replacements.string {
-        direction = eval(current.version, ">=1.21.8")
-        replace("\"FontMixin\"", "\"PreparedTextBuilderMixin\"")
-    }
-}
+stonecutter active "26.3"
